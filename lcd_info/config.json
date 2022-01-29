@@ -1,0 +1,6 @@
+{
+  "i2c_address": {
+    "type": "string",
+    "value": "0x3F"
+  }
+}

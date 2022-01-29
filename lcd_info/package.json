@@ -1,0 +1,37 @@
+{
+	"name": "lcd_info",
+	"version": "1.0.0",
+	"description": "Display info about the currently playing audio",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Tom Niesse",
+	"license": "ISC",
+	"repository": "https://github.com/yourname/yourrepo",
+	"volumio_info": {
+		"prettyName": "LCD_info",
+		"icon": "fa-lightbulb-o",
+		"plugin_type": "user_interface",
+		"architectures": [
+			"amd64",
+			"armhf",
+			"i386"
+		],
+		"os": [
+			"buster"
+		],
+		"details": "Lorem ipsum",
+		"changelog": "Lorem ipsum"
+	},
+	"engines": {
+		"node": ">=14.15.4",
+		"volumio": ">=3.198.0"
+	},
+	"dependencies": {
+		"fs-extra": "^0.28.0",
+		"kew": "^0.7.0",
+		"v-conf": "^1.4.0",
+                "i2c": "^0.2.5"
+	}
+}

@@ -1,0 +1,62 @@
+{
+  "page": {
+    "label": "LCD info configuration"
+  },
+  "sections": [
+   {
+      "id": "i2c_settings",
+      "element": "section",
+      "label": "I2C settings",
+      "icon": "fa-plug",
+      "onSave": {"type":"controller", "endpoint":"user_interface/lcd_info", "method":"saveI2CSettings"},
+      "saveButton": {
+        "label": "Save",
+        "data": [
+          "i2c_address"
+        ]
+      },
+      "content": [
+        {
+          "id": "i2c_address",
+          "type":"text",
+          "element": "input",
+          "doc": "This is the address the i2c display is on. Usually, this is 0x3F. The address can be found by executing the command 'i2cdetect -y 1'",
+          "label": "I2C address",
+          "value": "0x3F"
+        }
+      ]
+    },
+    {
+      "id": "display_settings",
+      "element": "section",
+      "label": "Display settings",
+      "icon": "fa-plug",
+      "onSave": {"type":"controller", "endpoint":"user_interface/lcd_info", "method":"saveDisplaySettings"},
+      "saveButton": {
+        "label": "Save",
+        "data": [
+          "scroll_type"
+        ]
+      },
+      "content": [
+        {
+          "id": "scroll_type",
+          "element": "select",
+          "label": "Scroll type",
+          "value": {"value": 1 ,"label": "Scroll"},
+          "options": [
+            {
+              "value": 1,
+              "label": "Scroll"
+            },
+            {
+              "value": 2,
+              "label": "None"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
