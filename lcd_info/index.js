@@ -7,6 +7,15 @@ var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var i2c = require('i2c'); // for LCD control
 
+// Make sure String knows what ljust is (ported from python)
+String.prototype.ljust = function( length, char ) {
+    var fill = [];
+    while(fill.length + this.length < length) {
+        fill[fill.length] = char;
+    }
+    return this + fill.join('');
+}
+
 //
 // LCD screen variables
 //
@@ -16,34 +25,74 @@ var LCD_MODE_DATA    = 1;
 var LCD_MODE_COMMAND = 0;
 var LCD_ENABLE = 0x04;
 // Addresses for the different lines on the screen
-var LCD_LINE_1 = 0x80;
-var LCD_LINE_2 = 0xC0;
-var LCD_LINE_3 = 0x94;
-var LCD_LINE_4 = 0xD4;
+var LCD_LINE_0 = 0x80;
+var LCD_LINE_1 = 0xC0;
+var LCD_LINE_2 = 0x94;
+var LCD_LINE_3 = 0xD4;
 // Backlight controls
-LCD_BACKLIGHT  = 0x08; // 0x08 = ON, 0x00 = OFF
-
-var wire = new i2c(LCD_I2C_ADDRESS, {device: '/dev/i2c-1'});
+var LCD_BACKLIGHT  = 0x08; // 0x08 = ON, 0x00 = OFF
+// Delay time
+var DELAY = 0.0000005;
 
 module.exports = lcdInfo;
 function lcdInfo(context) {
-	var self = this;
+    var self = this;
 
-	this.context = context;
-	this.commandRouter = this.context.coreCommand;
-	this.logger = this.context.logger;
-	this.configManager = this.context.configManager;
-
+    this.context = context;
+    this.commandRouter = this.context.coreCommand;
+    this.logger = this.context.logger;
+    this.configManager = this.context.configManager;
+    this.wire = new i2c(LCD_I2C_ADDRESS, {device: '/dev/i2c-1'});
+    this.lcdInit(); // Initialize the lcd screen
 }
 
-lcdInfo.prototype.lcdSendByte = function(byte, mode) {
-        var bits_high = mode | (bits & 0xF0) | LCD_BACKLIGHT;
-        var bits_low = mode | ((bits<<4) & 0xF0) | LCD_BACKLIGHT;
+lcdInfo.prototype.sleep = function(ms) {
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + ms){ /* Do nothing */ }
 }
 
-//lcdInfo.prototype.lcdToggle(bits) {
-//
-//}
+lcdInfo.prototype.lcdToggle = function(bits) {
+    this.sleep(DELAY);
+    this.wire.writeByte(bits | LCD_ENABLE, function(err) {});
+    this.sleep(DELAY);
+    this.wire.writeByte(bits & ~LCD_ENABLE, function(err) {});
+    this.sleep(DELAY);
+}
+
+lcdInfo.prototype.lcdSendByte = function(bits, mode) {
+    var bits_high = mode | (bits & 0xF0) | LCD_BACKLIGHT;
+    var bits_low = mode | ((bits<<4) & 0xF0) | LCD_BACKLIGHT;
+
+    this.wire.writeByte(bits_high, function(err) {});
+    this.lcdToggle(bits_high);
+    this.sleep(DELAY);
+    this.wire.writeByte(bits_low, function(err) {});
+    this.lcdToggle(bits_low);
+}
+
+lcdInfo.prototype.lcdInit = function() {
+    this.lcdSendByte(0x33,LCD_MODE_COMMAND); // 110011 Init
+    this.lcdSendByte(0x32,LCD_MODE_COMMAND); // 110010 init
+    this.lcdSendByte(0x06,LCD_MODE_COMMAND); // 000110 Cursor move
+    this.lcdSendByte(0x0C,LCD_MODE_COMMAND); // 001100 Display on, cursor off, blink off
+    this.lcdSendByte(0x28,LCD_MODE_COMMAND); // 101000 Data length, number of lines, font size
+    this.lcdSendByte(0x01,LCD_MODE_COMMAND); // Clear display
+}
+
+lcdInfo.prototype.lcdString = function(message, line) {
+    if(message.length > 20) {
+        message = message.substr(0, 20);
+        return;
+    }
+
+    message = message.ljust(LCD_WIDTH," ");
+
+    this.lcdSendByte(line, LCD_MODE_COMMAND);
+
+    for(var pos = 0; pos < LCD_WIDTH; pos++) {
+        this.lcdSendByte(message[pos].charCodeAt(0),LCD_MODE_DATA);
+    }
+}
 
 lcdInfo.prototype.onVolumioStart = function()
 {
@@ -51,6 +100,7 @@ lcdInfo.prototype.onVolumioStart = function()
 	var configFile=this.commandRouter.pluginManager.getConfigurationFile(this.context,'config.json');
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
+        this.lcdString("Volumio is starting", LCD_LINE_0);
 
     return libQ.resolve();
 }
@@ -59,6 +109,7 @@ lcdInfo.prototype.onStart = function() {
     var self = this;
 	var defer=libQ.defer();
 
+        this.lcdString("Plugin has started", LCD_LINE_1);
 
 	// Once the Plugin has successfull started resolve the promise
 	defer.resolve();
@@ -229,9 +280,9 @@ lcdInfo.prototype.parseState = function(sState) {
 // Announce updated State
 lcdInfo.prototype.pushState = function(state) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::pushState');
+	//self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::pushState');
 
-	return self.commandRouter.servicePushState(state, self.servicename);
+	//return self.commandRouter.servicePushState(state, self.servicename);
 };
 
 
