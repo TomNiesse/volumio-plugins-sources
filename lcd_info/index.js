@@ -5,7 +5,25 @@ var fs=require('fs-extra');
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
+var i2c = require('i2c'); // for LCD control
 
+//
+// LCD screen variables
+//
+var LCD_I2C_ADDRESS = 0x3F; // defaults to 0x3F
+var LCD_WIDTH = 20;
+var LCD_MODE_DATA    = 1;
+var LCD_MODE_COMMAND = 0;
+var LCD_ENABLE = 0x04;
+// Addresses for the different lines on the screen
+var LCD_LINE_1 = 0x80;
+var LCD_LINE_2 = 0xC0;
+var LCD_LINE_3 = 0x94;
+var LCD_LINE_4 = 0xD4;
+// Backlight controls
+LCD_BACKLIGHT  = 0x08; // 0x08 = ON, 0x00 = OFF
+
+var wire = new i2c(LCD_I2C_ADDRESS, {device: '/dev/i2c-1'});
 
 module.exports = lcdInfo;
 function lcdInfo(context) {
@@ -18,7 +36,14 @@ function lcdInfo(context) {
 
 }
 
+lcdInfo.prototype.lcdSendByte = function(byte, mode) {
+        var bits_high = mode | (bits & 0xF0) | LCD_BACKLIGHT;
+        var bits_low = mode | ((bits<<4) & 0xF0) | LCD_BACKLIGHT;
+}
 
+//lcdInfo.prototype.lcdToggle(bits) {
+//
+//}
 
 lcdInfo.prototype.onVolumioStart = function()
 {
