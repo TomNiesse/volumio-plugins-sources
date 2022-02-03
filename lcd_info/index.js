@@ -6,6 +6,7 @@ var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var i2c = require('i2c'); // for LCD control
+var request = require('request'); // used in getState()
 
 // Make sure String knows what ljust is (ported from python)
 String.prototype.ljust = function( length, char ) {
@@ -51,6 +52,10 @@ lcdInfo.prototype.sleep = function(ms) {
     while(new Date().getTime() < now + ms){ /* Do nothing */ }
 }
 
+lcdInfo.prototype.sleep_async = function(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 lcdInfo.prototype.lcdToggle = function(bits) {
     this.sleep(DELAY);
     this.wire.writeByte(bits | LCD_ENABLE, function(err) {});
@@ -80,15 +85,24 @@ lcdInfo.prototype.lcdInit = function() {
 }
 
 lcdInfo.prototype.lcdString = function(message, line) {
-    if(message.length > 20) {
-        message = message.substr(0, 20);
-        return;
+    // Make sure there is a message at all
+    if(message === null) {
+	return;
     }
 
+    // If the message is too long, cut it off
+    // TODO: support scrolling as well
+    if(message.length > 20) {
+        message = message.substr(0, 20);
+    }
+
+    // Pad the message if it is too short
     message = message.ljust(LCD_WIDTH," ");
 
+    // Set the right line
     this.lcdSendByte(line, LCD_MODE_COMMAND);
 
+    // Write all characters to the LCD screen
     for(var pos = 0; pos < LCD_WIDTH; pos++) {
         this.lcdSendByte(message[pos].charCodeAt(0),LCD_MODE_DATA);
     }
@@ -100,7 +114,7 @@ lcdInfo.prototype.onVolumioStart = function()
 	var configFile=this.commandRouter.pluginManager.getConfigurationFile(this.context,'config.json');
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
-        this.lcdString("Volumio is starting", LCD_LINE_0);
+        this.lcdString("Volumio has started", LCD_LINE_0);
 
     return libQ.resolve();
 }
@@ -110,6 +124,7 @@ lcdInfo.prototype.onStart = function() {
 	var defer=libQ.defer();
 
         this.lcdString("Plugin has started", LCD_LINE_1);
+        this.getState(); // start reading data from volumio
 
 	// Once the Plugin has successfull started resolve the promise
 	defer.resolve();
@@ -121,6 +136,8 @@ lcdInfo.prototype.onStop = function() {
     var self = this;
     var defer=libQ.defer();
 
+    this.lcdInit();
+
     // Once the Plugin has successfull stopped resolve the promise
     defer.resolve();
 
@@ -130,6 +147,7 @@ lcdInfo.prototype.onStop = function() {
 lcdInfo.prototype.onRestart = function() {
     var self = this;
     // Optional, use if you need it
+    this.lcdInit();
 };
 
 
@@ -266,22 +284,36 @@ lcdInfo.prototype.getState = function() {
 	var self = this;
 	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::getState');
 
+	let url = "http://0.0.0.0:3000/api/v1/getState";
+	let options = {json: true};
+	request(url, options, (error, res, body) => {
+		if (error) {
+			self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::getState -> could not get status at this time.');
+			return;
+		};
+		if (!error && res.statusCode == 200) {
+			self.lcdString(body.title, LCD_LINE_0);
+			self.lcdString(body.artist, LCD_LINE_1);
+			self.lcdString(body.album, LCD_LINE_2);
+			self.lcdString(body.status, LCD_LINE_3);
+		};
+	});
 
+        this.sleep_async(1000).then(() => {
+            this.getState();
+        });
 };
 
 //Parse state
 lcdInfo.prototype.parseState = function(sState) {
 	var self = this;
 	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::parseState');
-
-	//Use this method to parse the state and eventually send it with the following function
 };
 
 // Announce updated State
 lcdInfo.prototype.pushState = function(state) {
 	var self = this;
-	//self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::pushState');
-
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::pushState');
 	//return self.commandRouter.servicePushState(state, self.servicename);
 };
 
@@ -291,7 +323,6 @@ lcdInfo.prototype.explodeUri = function(uri) {
 	var defer=libQ.defer();
 
 	// Mandatory: retrieve all info for a given URI
-
 	return defer.promise;
 };
 
@@ -339,7 +370,6 @@ lcdInfo.prototype.search = function (query) {
 	var defer=libQ.defer();
 
 	// Mandatory, search. You can divide the search in sections using following functions
-
 	return defer.promise;
 };
 
@@ -364,7 +394,6 @@ lcdInfo.prototype.goto=function(data){
     var self=this
     var defer=libQ.defer()
 
-// Handle go to artist and go to album function
-
-     return defer.promise;
+    // Handle go to artist and go to album function
+    return defer.promise;
 };
