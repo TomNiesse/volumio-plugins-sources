@@ -20,6 +20,7 @@ String.prototype.ljust = function( length, char ) {
 //
 // LCD screen variables
 //
+var LCD_I2C_BLOCK_DEVICE= "/dev/i2c-1"
 var LCD_I2C_ADDRESS = 0x3F; // defaults to 0x3F
 var LCD_WIDTH = 20;
 var LCD_MODE_DATA    = 1;
@@ -43,8 +44,9 @@ function lcdInfo(context) {
     this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
-    this.wire = new i2c(LCD_I2C_ADDRESS, {device: '/dev/i2c-1'});
+    this.wire = new i2c(LCD_I2C_ADDRESS, {device: LCD_I2C_BLOCK_DEVICE});
     this.lcdInit(); // Initialize the lcd screen
+    this.current_status = {}; // If the status doesn't change, don't update the LCD screen
 }
 
 lcdInfo.prototype.sleep = function(ms) {
@@ -84,9 +86,18 @@ lcdInfo.prototype.lcdInit = function() {
     this.lcdSendByte(0x01,LCD_MODE_COMMAND); // Clear display
 }
 
+lcdInfo.prototype.lcdClear = function() {
+    this.lcdString("", LCD_LINE_0);
+    this.lcdString("", LCD_LINE_1);
+    this.lcdString("", LCD_LINE_2);
+    this.lcdString("", LCD_LINE_3);
+}
+
 lcdInfo.prototype.lcdString = function(message, line) {
     // Make sure there is a message at all
-    if(message === null) {
+    if(message === null || typeof message === "undefined") {
+	// Write an empty string to the LCD, since garbage was given
+	this.lcdString("", line);
 	return;
     }
 
@@ -124,6 +135,7 @@ lcdInfo.prototype.onStart = function() {
 	var defer=libQ.defer();
 
         this.lcdString("Plugin has started", LCD_LINE_1);
+//        this.wire = new i2c(LCD_I2C_ADDRESS, {device: self.config.get("i2c_block_device")});
         this.getState(); // start reading data from volumio
 
 	// Once the Plugin has successfull started resolve the promise
@@ -204,6 +216,7 @@ lcdInfo.prototype.saveI2CSettings = function(data) {
         if(data["i2c_address"].length) {
             // Check if the input is a valid address
             self.config.set('i2c_address', data["i2c_address"]);
+	    self.config.set("i2c_block_device", data["i2c_block_device"]);
             self.commandRouter.pushToastMessage("success", "Saved", "I2C settings have been saved");
         } else {
             self.commandRouter.pushToastMessage("error", "Empty input in configuration", "I2C settings have NOT been saved");
@@ -292,10 +305,28 @@ lcdInfo.prototype.getState = function() {
 			return;
 		};
 		if (!error && res.statusCode == 200) {
-			self.lcdString(body.title, LCD_LINE_0);
-			self.lcdString(body.artist, LCD_LINE_1);
-			self.lcdString(body.album, LCD_LINE_2);
-			self.lcdString(body.status, LCD_LINE_3);
+			if(body.service === "webradio") {
+				if(body.album !== null && typeof body.album !== "undefined" && body.album.length <= 0 || body.title.includes(" - ")) {
+					// split body.title into title and artist
+					var tmp = body.title.split(" - ");
+                                        var title = tmp[0];
+					var artist = tmp[1];
+					self.lcdString(title, LCD_LINE_0);
+                        		self.lcdString(artist, LCD_LINE_1);
+					self.lcdString(body.artist, LCD_LINE_2); // for now
+                        		//self.lcdString(body.status, LCD_LINE_3);
+				} else {
+					self.lcdString(body.title, LCD_LINE_0);
+		                        self.lcdString(body.artist, LCD_LINE_1);
+        		                self.lcdString(body.album, LCD_LINE_2);
+        		                //self.lcdString(body.status, LCD_LINE_3);
+				}
+			} else {
+				self.lcdString(body.title, LCD_LINE_0);
+                                self.lcdString(body.artist, LCD_LINE_1);
+                                self.lcdString(body.album, LCD_LINE_2);
+				//self.lcdString(body.status, LCD_LINE_3);
+			}
 		};
 	});
 
