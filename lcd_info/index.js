@@ -5,38 +5,12 @@ var fs=require('fs-extra');
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
-var i2c = require('i2c'); // for LCD control
-var request = require('request'); // used in getState()
-
-// Make sure String knows what ljust is (ported from python)
-String.prototype.ljust = function( length, char ) {
-    var fill = [];
-    while(fill.length + this.length < length) {
-        fill[fill.length] = char;
-    }
-    return this + fill.join('');
-}
-
-//
-// LCD screen variables
-//
-var LCD_I2C_BLOCK_DEVICE= "/dev/i2c-1"
-var LCD_I2C_ADDRESS = 0x3F; // defaults to 0x3F
-var LCD_WIDTH = 20;
-var LCD_MODE_DATA    = 1;
-var LCD_MODE_COMMAND = 0;
-var LCD_ENABLE = 0x04;
-// Addresses for the different lines on the screen
-var LCD_LINE_0 = 0x80;
-var LCD_LINE_1 = 0xC0;
-var LCD_LINE_2 = 0x94;
-var LCD_LINE_3 = 0xD4;
-// Backlight controls
-var LCD_BACKLIGHT  = 0x08; // 0x08 = ON, 0x00 = OFF
-// Delay time
-var DELAY = 0.0000005;
+var request = require('request');
+var lcdDevice = require('./lcdDevice');
+var renderer = require('./renderer');
 
 module.exports = lcdInfo;
+
 function lcdInfo(context) {
     var self = this;
 
@@ -44,79 +18,18 @@ function lcdInfo(context) {
     this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
-    this.wire = new i2c(LCD_I2C_ADDRESS, {device: LCD_I2C_BLOCK_DEVICE});
-    this.lcdInit(); // Initialize the lcd screen
-    this.current_status = {}; // If the status doesn't change, don't update the LCD screen
-}
 
-lcdInfo.prototype.sleep = function(ms) {
-    var now = new Date().getTime();
-    while(new Date().getTime() < now + ms){ /* Do nothing */ }
+    this.lcd = new lcdDevice("/dev/i2c-1", 0x3F);
+    this.lcd.init();
+    this.renderer = new renderer(this.lcd);
+    this.renderer.setScroll(true);
+    this.renderer.setScrollSize(5);
+
+    this.current_status = {}; // If the status doesn't change, don't update the LCD screen
 }
 
 lcdInfo.prototype.sleep_async = function(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-lcdInfo.prototype.lcdToggle = function(bits) {
-    this.sleep(DELAY);
-    this.wire.writeByte(bits | LCD_ENABLE, function(err) {});
-    this.sleep(DELAY);
-    this.wire.writeByte(bits & ~LCD_ENABLE, function(err) {});
-    this.sleep(DELAY);
-}
-
-lcdInfo.prototype.lcdSendByte = function(bits, mode) {
-    var bits_high = mode | (bits & 0xF0) | LCD_BACKLIGHT;
-    var bits_low = mode | ((bits<<4) & 0xF0) | LCD_BACKLIGHT;
-
-    this.wire.writeByte(bits_high, function(err) {});
-    this.lcdToggle(bits_high);
-    this.sleep(DELAY);
-    this.wire.writeByte(bits_low, function(err) {});
-    this.lcdToggle(bits_low);
-}
-
-lcdInfo.prototype.lcdInit = function() {
-    this.lcdSendByte(0x33,LCD_MODE_COMMAND); // 110011 Init
-    this.lcdSendByte(0x32,LCD_MODE_COMMAND); // 110010 init
-    this.lcdSendByte(0x06,LCD_MODE_COMMAND); // 000110 Cursor move
-    this.lcdSendByte(0x0C,LCD_MODE_COMMAND); // 001100 Display on, cursor off, blink off
-    this.lcdSendByte(0x28,LCD_MODE_COMMAND); // 101000 Data length, number of lines, font size
-    this.lcdSendByte(0x01,LCD_MODE_COMMAND); // Clear display
-}
-
-lcdInfo.prototype.lcdClear = function() {
-    this.lcdString("", LCD_LINE_0);
-    this.lcdString("", LCD_LINE_1);
-    this.lcdString("", LCD_LINE_2);
-    this.lcdString("", LCD_LINE_3);
-}
-
-lcdInfo.prototype.lcdString = function(message, line) {
-    // Make sure there is a message at all
-    if(message === null || typeof message === "undefined") {
-	// Write an empty string to the LCD, since garbage was given
-	this.lcdString("", line);
-	return;
-    }
-
-    // If the message is too long, cut it off
-    // TODO: support scrolling as well
-    if(message.length > 20) {
-        message = message.substr(0, 20);
-    }
-
-    // Pad the message if it is too short
-    message = message.ljust(LCD_WIDTH," ");
-
-    // Set the right line
-    this.lcdSendByte(line, LCD_MODE_COMMAND);
-
-    // Write all characters to the LCD screen
-    for(var pos = 0; pos < LCD_WIDTH; pos++) {
-        this.lcdSendByte(message[pos].charCodeAt(0),LCD_MODE_DATA);
-    }
 }
 
 lcdInfo.prototype.onVolumioStart = function()
@@ -125,7 +38,7 @@ lcdInfo.prototype.onVolumioStart = function()
 	var configFile=this.commandRouter.pluginManager.getConfigurationFile(this.context,'config.json');
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
-        this.lcdString("Volumio has started", LCD_LINE_0);
+        this.lcd.displayString("Volumio has started", 0);
 
     return libQ.resolve();
 }
@@ -134,7 +47,8 @@ lcdInfo.prototype.onStart = function() {
     var self = this;
 	var defer=libQ.defer();
 
-        this.lcdString("Plugin has started", LCD_LINE_1);
+        this.lcd.displayString("Plugin has started", 1);
+	this.lcd.sleep(1000);
 //        this.wire = new i2c(LCD_I2C_ADDRESS, {device: self.config.get("i2c_block_device")});
         this.getState(); // start reading data from volumio
 
@@ -148,7 +62,7 @@ lcdInfo.prototype.onStop = function() {
     var self = this;
     var defer=libQ.defer();
 
-    this.lcdInit();
+    this.lcd.init();
 
     // Once the Plugin has successfull stopped resolve the promise
     defer.resolve();
@@ -159,7 +73,7 @@ lcdInfo.prototype.onStop = function() {
 lcdInfo.prototype.onRestart = function() {
     var self = this;
     // Optional, use if you need it
-    this.lcdInit();
+    this.lcd.init();
 };
 
 
@@ -311,24 +225,26 @@ lcdInfo.prototype.getState = function() {
 					var tmp = body.title.split(" - ");
                                         var title = tmp[0];
 					var artist = tmp[1];
-					self.lcdString(title, LCD_LINE_0);
-                        		self.lcdString(artist, LCD_LINE_1);
-					self.lcdString(body.artist, LCD_LINE_2); // for now
-                        		//self.lcdString(body.status, LCD_LINE_3);
+					self.renderer.updateBuffer(title, 0);
+                        		self.renderer.updateBuffer(artist, 1);
+					self.renderer.updateBuffer(body.artist, 2); // for now
+                        		//self.renderer.updateBuffer(body.status, 3);
 				} else {
-					self.lcdString(body.title, LCD_LINE_0);
-		                        self.lcdString(body.artist, LCD_LINE_1);
-        		                self.lcdString(body.album, LCD_LINE_2);
-        		                //self.lcdString(body.status, LCD_LINE_3);
+					self.renderer.updateBuffer(body.title, 0);
+		                        self.renderer.updateBuffer(body.artist, 1);
+        		                self.renderer.updateBuffer(body.album, 2);
+        		                //self.renderer.updateBuffer(body.status, 3);
 				}
 			} else {
-				self.lcdString(body.title, LCD_LINE_0);
-                                self.lcdString(body.artist, LCD_LINE_1);
-                                self.lcdString(body.album, LCD_LINE_2);
-				//self.lcdString(body.status, LCD_LINE_3);
+				self.renderer.updateBuffer(body.title, 0);
+                                self.renderer.updateBuffer(body.artist, 1);
+                                self.renderer.updateBuffer(body.album, 2);
+				//self.renderer.updateBuffer(body.status, 3);
 			}
 		};
 	});
+
+	this.renderer.update();
 
         this.sleep_async(1000).then(() => {
             this.getState();

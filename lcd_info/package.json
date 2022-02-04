@@ -1,14 +1,14 @@
 {
 	"name": "lcd_info",
 	"version": "1.0.0",
-	"description": "Display info about the currently playing audio",
+	"description": "Display info about currently playing audio",
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "Tom Niesse",
 	"license": "ISC",
-	"repository": "https://github.com/yourname/yourrepo",
+	"repository": "https://github.com/TomNiesse/volumio-plugins-sources",
 	"volumio_info": {
 		"prettyName": "LCD_info",
 		"icon": "fa-lightbulb-o",
@@ -21,8 +21,8 @@
 		"os": [
 			"buster"
 		],
-		"details": "Lorem ipsum",
-		"changelog": "Lorem ipsum"
+		"details": "Display information about currently playing audio",
+		"changelog": "See commits"
 	},
 	"engines": {
 		"node": ">=14.15.4",
