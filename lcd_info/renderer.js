@@ -7,6 +7,7 @@ function renderer(lcd) {
 
 	this.scroll_enabled = new Boolean(false);
 	this.scroll_size = 0;
+	this.scroll_interval = 1;	// in seconds
 
 	this.buffer = new Array(4);
 	this.buffer[0] = " ";
@@ -36,28 +37,36 @@ renderer.prototype.setScrollSize = function(new_value) {
 	this.scroll_size = new_value;
 }
 
+renderer.prototype.setScrollInterval = function(new_value) {
+	this.scroll_interval = new_value;
+}
+
 renderer.prototype.update = function() {
 	// Update the display
 	this.displayBuffer();
 
+	// Scroll the text if desired
 	if(this.scroll_enabled === true && this.scroll_size > 0) {
 		this.scroll();
 	}
+
+	// Do some sleeping
+	lcd.sleep(this.scroll_interval);
 }
 
 renderer.prototype.updateBuffer = function(new_string, line) {
 	if(line <= this.buffer.length-1 && new_string !== this.buffer[line]) {
-                this.buffer[line] = new_string;
+		this.buffer[line] = new_string;
 		this.scroll_position[line] = 0;
 	}
 }
 
 renderer.prototype.displayBuffer = function() {
 	for(var line = 0; line < this.buffer.length; line++) {
-		if(this.buffer[line] !== undefined) {
+		if(this.buffer[line] !== undefined && this.buffer[line] !== null) {
 			this.lcd.displayString(this.buffer[line].substr(this.scroll_position[line], this.lcd.getWidth()), line);
 		} else {
-			this.lcd.displayString("", line);
+			this.lcd.displayString(" ", line);
 		}
 	}
 }
@@ -65,7 +74,7 @@ renderer.prototype.displayBuffer = function() {
 renderer.prototype.scroll = function() {
 	for(var line = 0; line < this.buffer.length; line++) {
 		// Only start scrolling if the line of text is longer than the LCD display
-		if(this.buffer[line] !== undefined && this.buffer[line].length > this.lcd.getWidth()) {
+		if(this.buffer[line] !== undefined && this.buffer[line] !== null && this.buffer[line].length > this.lcd.getWidth()) {
 			// Did we already reach the end of the scroll? if yes, start from the beginning
 			if(this.buffer[line].length - this.scroll_position[line] <= this.lcd.getWidth()) {
 				this.scroll_position[line] = 0;

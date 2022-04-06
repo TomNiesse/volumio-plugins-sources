@@ -23,7 +23,7 @@ function lcdInfo(context) {
     this.lcd.init();
     this.renderer = new renderer(this.lcd);
     this.renderer.setScroll(true);
-    this.renderer.setScrollSize(5);
+    this.renderer.setScrollSize(10);
 
     this.current_status = {}; // If the status doesn't change, don't update the LCD screen
 }
@@ -90,7 +90,12 @@ lcdInfo.prototype.getUIConfig = function() {
         __dirname + '/UIConfig.json')
         .then(function(uiconf)
         {
-            uiconf.sections[0].content[0].value = self.config.get("i2c_address");
+            uiconf.sections[0].content[0].value = self.config.get("i2c_device");
+            uiconf.sections[0].content[1].value = self.config.get("i2c_address");
+
+            uiconf.sections[1].content[0].value.value = parseInt(self.config.get("scroll_type")); // it's really value.value, we're setting a select element here.
+            uiconf.sections[1].content[1].value = parseInt(self.config.get("scroll_interval"));
+            uiconf.sections[1].content[2].value = parseInt(self.config.get("scroll_size"));
 
             defer.resolve(uiconf);
         })
@@ -127,10 +132,10 @@ lcdInfo.prototype.saveI2CSettings = function(data) {
         var self = this;
         var defer = libQ.defer();
 
-        if(data["i2c_address"].length) {
+        if(data["i2c_device"].length && data["i2c_address"].length) {
             // Check if the input is a valid address
             self.config.set('i2c_address', data["i2c_address"]);
-	    self.config.set("i2c_block_device", data["i2c_block_device"]);
+	    self.config.set("i2c_device", data["i2c_device"]);
             self.commandRouter.pushToastMessage("success", "Saved", "I2C settings have been saved");
         } else {
             self.commandRouter.pushToastMessage("error", "Empty input in configuration", "I2C settings have NOT been saved");
@@ -139,14 +144,19 @@ lcdInfo.prototype.saveI2CSettings = function(data) {
         return defer.promise;
 }
 
-
 lcdInfo.prototype.saveDisplaySettings = function(data) {
         var self = this;
         var defer = libQ.defer();
 
         self.config.set('scroll_type', data["scroll_type"]);
 
-        self.commandRouter.pushToastMessage("success", "Saved", "Display settings have been saved");
+	if(data["scroll_size"].length && data["scroll_interval"].length) {
+		self.config.set("scroll_size", data["scroll_size"]);
+        	self.config.set("scroll_interval", data["scroll_interval"]);
+		self.commandRouter.pushToastMessage("success", "Saved", "Display settings have been saved");
+	} else {
+		self.commandRouter.pushToastMessage("error", "Empty input in configuration", "Some display settings have NOT been saved" + String(data["scroll_size"].length));
+	}
 
         return defer.promise;
 }

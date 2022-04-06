@@ -1,6 +1,22 @@
 {
+  "i2c_device": {
+    "type": "string",
+    "value": "/dev/i2c-1"
+  },
   "i2c_address": {
     "type": "string",
     "value": "0x3F"
+  },
+  "scroll_type": {
+    "type": "string",
+    "value": "1"
+  },
+  "scroll_interval": {
+    "type": "string",
+    "value": "1"
+  },
+  "scroll_size": {
+    "type": "string",
+    "value": "20"
   }
 }

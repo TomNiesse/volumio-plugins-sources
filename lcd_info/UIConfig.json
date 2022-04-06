@@ -12,13 +12,22 @@
       "saveButton": {
         "label": "Save",
         "data": [
+          "i2c_device",
           "i2c_address"
         ]
       },
       "content": [
         {
+          "id": "i2c_device",
+          "type": "text",
+          "element": "input",
+          "doc": "This setting configures the I2C block device the LCD display is connected to. For a Raspberry Pi, this is usually '/dev/i2c-1'",
+          "label": "I2C block device",
+          "value": "/dev/i2c-1"
+        },
+        {
           "id": "i2c_address",
-          "type":"text",
+          "type": "text",
           "element": "input",
           "doc": "This is the address the i2c display is on. Usually, this is 0x3F. The address can be found by executing the command 'i2cdetect -y 1'",
           "label": "I2C address",
@@ -35,25 +44,46 @@
       "saveButton": {
         "label": "Save",
         "data": [
-          "scroll_type"
+          "scroll_type",
+          "scroll_interval",
+          "scroll_size"
         ]
       },
       "content": [
         {
           "id": "scroll_type",
           "element": "select",
+          "doc": "Enable text scrolling if the text is too long to display.",
           "label": "Scroll type",
-          "value": {"value": 1 ,"label": "Scroll"},
+          "value": {"value": 1 ,"label": "None"},
           "options": [
             {
               "value": 1,
-              "label": "Scroll"
+              "label": "None"
             },
             {
               "value": 2,
-              "label": "None"
+              "label": "Scroll"
             }
           ]
+        },
+        {
+          "id": "scroll_interval",
+          "type": "text",
+          "element": "input",
+          "doc": "This setting configures how fast the text scrolls on the LCD display (in seconds).",
+          "label": "Scroll speed",
+          "value": "1",
+          "visibleIf": {"field": "scroll_type", "value": 2}
+        },
+        {
+          "id": "scroll_size",
+          "type": "text",
+          "element": "input",
+          "doc": "This setting configures how many characters the text scrolls on the LCD display per scroll operation.",
+          "label": "Scroll size",
+          "value": "20",
+          "visibleIf": {"field": "scroll_type", "value": 2}
         }
       ]
     }
