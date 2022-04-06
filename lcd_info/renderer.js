@@ -49,9 +49,6 @@ renderer.prototype.update = function() {
 	if(this.scroll_enabled === true && this.scroll_size > 0) {
 		this.scroll();
 	}
-
-	// Do some sleeping
-	lcd.sleep(this.scroll_interval);
 }
 
 renderer.prototype.updateBuffer = function(new_string, line) {

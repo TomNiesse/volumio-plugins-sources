@@ -24,6 +24,7 @@ function lcdInfo(context) {
     this.renderer = new renderer(this.lcd);
     this.renderer.setScroll(true);
     this.renderer.setScrollSize(10);
+    this.renderer.setScrollInterval(5);
 
     this.current_status = {}; // If the status doesn't change, don't update the LCD screen
 }
@@ -90,10 +91,22 @@ lcdInfo.prototype.getUIConfig = function() {
         __dirname + '/UIConfig.json')
         .then(function(uiconf)
         {
+            // Load the I2C settings
             uiconf.sections[0].content[0].value = self.config.get("i2c_device");
             uiconf.sections[0].content[1].value = self.config.get("i2c_address");
 
-            uiconf.sections[1].content[0].value.value = parseInt(self.config.get("scroll_type")); // it's really value.value, we're setting a select element here.
+            // Lead the right select option
+            uiconf.sections[1].content[0].value.value = parseInt(self.config.get("scroll_type")); // it's really value.value
+            switch(parseInt(self.config.get("scroll_type"))) {
+		case 1:
+		    uiconf.sections[1].content[0].value.label = "None";
+		    break;
+                case 2:
+                    uiconf.sections[1].content[0].value.label = "Scroll";
+                    break;
+            }
+
+            // Load the optional scroll options
             uiconf.sections[1].content[1].value = parseInt(self.config.get("scroll_interval"));
             uiconf.sections[1].content[2].value = parseInt(self.config.get("scroll_size"));
 
@@ -104,7 +117,7 @@ lcdInfo.prototype.getUIConfig = function() {
             defer.reject(new Error());
         });
 
-    self.commandRouter.pushToastMessage('success', "Load settings", "Loaded");
+//    self.commandRouter.pushToastMessage('success', "Load settings", "Loaded all settings");
 
     return defer.promise;
 };
@@ -148,14 +161,17 @@ lcdInfo.prototype.saveDisplaySettings = function(data) {
         var self = this;
         var defer = libQ.defer();
 
-        self.config.set('scroll_type', data["scroll_type"]);
+        self.config.set('scroll_type', data["scroll_type"].value);
 
-	if(data["scroll_size"].length && data["scroll_interval"].length) {
-		self.config.set("scroll_size", data["scroll_size"]);
+	var scroll_size = parseInt(data["scroll_size"]);
+	var scroll_interval = parseInt(data["scroll_interval"]);
+
+	if(scroll_size >= 0 && scroll_interval >= 0) {
+		self.config.set("scroll_size", data["scroll_interval"]);
         	self.config.set("scroll_interval", data["scroll_interval"]);
 		self.commandRouter.pushToastMessage("success", "Saved", "Display settings have been saved");
 	} else {
-		self.commandRouter.pushToastMessage("error", "Empty input in configuration", "Some display settings have NOT been saved" + String(data["scroll_size"].length));
+		self.commandRouter.pushToastMessage("error", "Empty or invalid input in configuration", "Some display settings have NOT been saved");
 	}
 
         return defer.promise;
