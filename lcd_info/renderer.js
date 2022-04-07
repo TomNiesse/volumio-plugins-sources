@@ -20,25 +20,46 @@ function renderer(lcd) {
         this.scroll_position[1] = 0;
         this.scroll_position[2] = 0;
         this.scroll_position[3] = 0;
+
+	this.autoScroll();
 }
 
-renderer.prototype.setScroll = function(new_value) {
-	switch(new_value) {
-		case true:
-			this.scroll_enabled = true;
-			break;
-		case false:
-			this.scroll_enabled = false;
-			break;
+renderer.prototype.sleep_async = function(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+renderer.prototype.autoScroll = function() {
+	var self = this;
+
+	var scroll_interval = parseInt(this.scroll_interval);
+	if(this.scroll_enabled === true && this.scroll_size > 0 && scroll_interval > 0) {
+		self.scroll();
+	} else {
+		this.scroll_position[0] = 0;
+                this.scroll_position[1] = 0;
+                this.scroll_position[2] = 0;
+                this.scroll_position[3] = 0;
 	}
+
+	this.sleep_async(this.scroll_interval * 1000).then(() => {
+		self.autoScroll();
+        });
+}
+
+renderer.prototype.setScroll = function(bool_new_value) {
+	this.scroll_enabled = bool_new_value;
 }
 
 renderer.prototype.setScrollSize = function(new_value) {
-	this.scroll_size = new_value;
+	this.scroll_size = parseInt(new_value);
 }
 
 renderer.prototype.setScrollInterval = function(new_value) {
-	this.scroll_interval = new_value;
+	this.scroll_interval = parseInt(new_value);
+}
+
+renderer.prototype.getScrollInterval = function() {
+	return this.scroll_interval;
 }
 
 renderer.prototype.update = function() {
@@ -46,13 +67,18 @@ renderer.prototype.update = function() {
 	this.displayBuffer();
 
 	// Scroll the text if desired
-	if(this.scroll_enabled === true && this.scroll_size > 0) {
-		this.scroll();
-	}
+//	if(this.scroll_enabled === true && this.scroll_size > 0) {
+//		this.scroll();
+//	} else {
+//		this.scroll_position[0] = 0;
+//        	this.scroll_position[1] = 0;
+//        	this.scroll_position[2] = 0;
+//        	this.scroll_position[3] = 0;
+//	}
 }
 
 renderer.prototype.updateBuffer = function(new_string, line) {
-	if(line <= this.buffer.length-1 && new_string !== this.buffer[line]) {
+	if(line <= this.buffer.length-1 && new_string != this.buffer[line]) {
 		this.buffer[line] = new_string;
 		this.scroll_position[line] = 0;
 	}

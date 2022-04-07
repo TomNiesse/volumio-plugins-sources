@@ -14,19 +14,39 @@ module.exports = lcdInfo;
 function lcdInfo(context) {
     var self = this;
 
+    this.enabled = false;
     this.context = context;
     this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
+}
 
-    this.lcd = new lcdDevice("/dev/i2c-1", 0x3F);
-    this.lcd.init();
-    this.renderer = new renderer(this.lcd);
-    this.renderer.setScroll(true);
-    this.renderer.setScrollSize(10);
-    this.renderer.setScrollInterval(5);
+lcdInfo.prototype.initializeLcdScreen = function() {
+    var defer = libQ.defer();
+    var self = this;
 
-    this.current_status = {}; // If the status doesn't change, don't update the LCD screen
+    this.i2c_device = "/dev/i2c-1";     // default to "/dev/i2c-1"
+    this.i2c_address = 0x3F;            // default to 0x3F
+
+    // Load the plugin's settings
+    var lang_code = this.commandRouter.sharedVars.get('language_code');
+    self.commandRouter.i18nJson(__dirname+'/i18n/strings_'+lang_code+'.json', __dirname+'/i18n/strings_en.json', __dirname + '/UIConfig.json')
+        .then(function(uiconf)
+        {
+            self.i2c_device = self.config.get("i2c_device");
+            self.i2c_address = parseInt(self.config.get("i2c_address"));
+            self.renderer_scroll_type = parseInt(self.config.get("scroll_type"));
+            self.renderer_scroll_size = parseInt(self.config.get("scroll_size"));
+            self.renderer_scroll_interval = parseInt(self.config.get("scroll_interval"));
+            defer.resolve(uiconf);
+        })
+        .fail(function()
+        {
+            defer.reject(new Error());
+        });
+
+    this.initializeLcdDevice(this.i2c_device, this.i2c_address);
+    this.initializeRenderer(this.renderer_scroll_type, this.renderer_scroll_size, this.renderer_scroll_interval);
 }
 
 lcdInfo.prototype.sleep_async = function(ms) {
@@ -39,22 +59,25 @@ lcdInfo.prototype.onVolumioStart = function()
 	var configFile=this.commandRouter.pluginManager.getConfigurationFile(this.context,'config.json');
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
-        this.lcd.displayString("Volumio has started", 0);
+
+        this.initializeLcdScreen();
 
     return libQ.resolve();
 }
 
 lcdInfo.prototype.onStart = function() {
     var self = this;
+ 	this.enabled = true;
 	var defer=libQ.defer();
 
-        this.lcd.displayString("Plugin has started", 1);
-	this.lcd.sleep(1000);
+//        this.initializeLcdScreen();
 //        this.wire = new i2c(LCD_I2C_ADDRESS, {device: self.config.get("i2c_block_device")});
         this.getState(); // start reading data from volumio
 
 	// Once the Plugin has successfull started resolve the promise
 	defer.resolve();
+
+    this.initializeLcdScreen();
 
     return defer.promise;
 };
@@ -63,7 +86,8 @@ lcdInfo.prototype.onStop = function() {
     var self = this;
     var defer=libQ.defer();
 
-    this.lcd.init();
+    this.enabled = false;
+    this.lcd.init(); // clear the lcd screen
 
     // Once the Plugin has successfull stopped resolve the promise
     defer.resolve();
@@ -96,7 +120,7 @@ lcdInfo.prototype.getUIConfig = function() {
             uiconf.sections[0].content[1].value = self.config.get("i2c_address");
 
             // Lead the right select option
-            uiconf.sections[1].content[0].value.value = parseInt(self.config.get("scroll_type")); // it's really value.value
+            uiconf.sections[1].content[0].value.value = parseInt(self.config.get("scroll_type"));
             switch(parseInt(self.config.get("scroll_type"))) {
 		case 1:
 		    uiconf.sections[1].content[0].value.label = "None";
@@ -116,8 +140,6 @@ lcdInfo.prototype.getUIConfig = function() {
         {
             defer.reject(new Error());
         });
-
-//    self.commandRouter.pushToastMessage('success', "Load settings", "Loaded all settings");
 
     return defer.promise;
 };
@@ -147,34 +169,75 @@ lcdInfo.prototype.saveI2CSettings = function(data) {
 
         if(data["i2c_device"].length && data["i2c_address"].length) {
             // Check if the input is a valid address
-            self.config.set('i2c_address', data["i2c_address"]);
+            self.config.set("i2c_address", data["i2c_address"]);
 	    self.config.set("i2c_device", data["i2c_device"]);
             self.commandRouter.pushToastMessage("success", "Saved", "I2C settings have been saved");
+            self.initializeLcdDevice(data["i2c_device"], parseInt(data["i2c_address"]));
         } else {
             self.commandRouter.pushToastMessage("error", "Empty input in configuration", "I2C settings have NOT been saved");
         }
 
+	// Create a new lcdDevice object to apply the new settings
+        this.initializeLcdDevice(data["i2c_device"], parseInt(data["i2c_address"]));
+
         return defer.promise;
+}
+
+lcdInfo.prototype.initializeLcdDevice = function(i2c_device, i2c_address) {
+	this.lcd = new lcdDevice(i2c_device, i2c_address);
+        this.lcd.init();
 }
 
 lcdInfo.prototype.saveDisplaySettings = function(data) {
         var self = this;
         var defer = libQ.defer();
 
-        self.config.set('scroll_type', data["scroll_type"].value);
-
+	var scroll_type = parseInt(data["scroll_type"].value);
 	var scroll_size = parseInt(data["scroll_size"]);
 	var scroll_interval = parseInt(data["scroll_interval"]);
 
-	if(scroll_size >= 0 && scroll_interval >= 0) {
-		self.config.set("scroll_size", data["scroll_interval"]);
+//	self.commandRouter.pushToastMessage("success", "Debug", String(scroll_size));
+
+	if(scroll_type === 1) {
+		self.config.set('scroll_type', 1);
+		self.config.set("scroll_size", data["scroll_size"]);
+                self.config.set("scroll_interval", data["scroll_interval"]);
+		self.commandRouter.pushToastMessage("success", "Saved", "Display settings have been saved");
+		self.initializeRenderer(parseInt(data["scroll_type"].value), 0, 0);
+	} else if(scroll_type === 2 && scroll_size >= 0 && scroll_interval >= 0) {
+                self.config.set('scroll_type', 2);
+		self.config.set("scroll_size", data["scroll_size"]);
         	self.config.set("scroll_interval", data["scroll_interval"]);
 		self.commandRouter.pushToastMessage("success", "Saved", "Display settings have been saved");
+		self.initializeRenderer(parseInt(data["scroll_type"].value), scroll_size, scroll_interval);
 	} else {
 		self.commandRouter.pushToastMessage("error", "Empty or invalid input in configuration", "Some display settings have NOT been saved");
 	}
 
+// Apply the new settings immediately
+//	if(parseInt(data["scroll_type"].value) === 2) {
+//		this.renderer.setScroll(true);
+//		self.commandRouter.pushToastMessage("success", "Saved", "Scrolling is enabled");
+//	} else {
+//		this.renderer.setScroll(false);
+//		self.commandRouter.pushToastMessage("success", "Saved", "Scrolling is disabled");
+//	}
+//	this.renderer.setScrollSize(parseInt(data["scroll_size"]));
+//	this.renderer.setScrollInterval(parseInt(data["s
+
         return defer.promise;
+}
+
+lcdInfo.prototype.initializeRenderer = function (scroll_type, scroll_size, scroll_interval) {
+        this.renderer = new renderer(this.lcd);
+
+	if(scroll_type === 2) {
+                this.renderer.setScroll(true);
+        } else {
+                this.renderer.setScroll(false);
+        }
+        this.renderer.setScrollSize(scroll_size);
+        this.renderer.setScrollInterval(scroll_interval);
 }
 
 // Playback Controls ---------------------------------------------------------------------------------------
@@ -273,7 +336,9 @@ lcdInfo.prototype.getState = function() {
 	this.renderer.update();
 
         this.sleep_async(1000).then(() => {
-            this.getState();
+	    if(self.enabled) {
+                self.getState();
+            }
         });
 };
 
