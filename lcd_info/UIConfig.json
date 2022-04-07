@@ -22,7 +22,7 @@
           "type": "text",
           "element": "input",
           "doc": "This setting configures the I2C block device the LCD display is connected to. For a Raspberry Pi, this is usually '/dev/i2c-1'",
-          "label": "I2C block device",
+          "label": "I2C device path",
           "value": "/dev/i2c-1"
         },
         {
