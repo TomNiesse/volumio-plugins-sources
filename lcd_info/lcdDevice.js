@@ -115,6 +115,9 @@ lcdDevice.prototype.displayString = function(message, line) {
 	default:
 	    return;
     }
+	
+    // Remove accents from the message
+    message = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     // Write all characters to the LCD screen
     for(var pos = 0; pos < this.LCD_WIDTH; pos++) {
