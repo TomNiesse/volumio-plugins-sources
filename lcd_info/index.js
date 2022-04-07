@@ -98,6 +98,7 @@ lcdInfo.prototype.onStop = function() {
 lcdInfo.prototype.onRestart = function() {
     var self = this;
     // Optional, use if you need it
+
     this.lcd.init();
 };
 

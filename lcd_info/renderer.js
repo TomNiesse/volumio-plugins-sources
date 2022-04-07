@@ -6,6 +6,7 @@ function renderer(lcd) {
 	this.lcd = lcd;
 
 	this.scroll_enabled = new Boolean(false);
+	this.just_updated = false;
 	this.scroll_size = 0;
 	this.scroll_interval = 1;	// in seconds
 
@@ -32,13 +33,14 @@ renderer.prototype.autoScroll = function() {
 	var self = this;
 
 	var scroll_interval = parseInt(this.scroll_interval);
-	if(this.scroll_enabled === true && this.scroll_size > 0 && scroll_interval > 0) {
+	if(this.scroll_enabled === true && this.scroll_size > 0 && scroll_interval > 0 && this.just_updated !== true) {
 		self.scroll();
 	} else {
 		this.scroll_position[0] = 0;
                 this.scroll_position[1] = 0;
                 this.scroll_position[2] = 0;
                 this.scroll_position[3] = 0;
+		this.just_updated = false;
 	}
 
 	this.sleep_async(this.scroll_interval * 1000).then(() => {
@@ -78,9 +80,10 @@ renderer.prototype.update = function() {
 }
 
 renderer.prototype.updateBuffer = function(new_string, line) {
-	if(line <= this.buffer.length-1 && new_string != this.buffer[line]) {
+	if(line <= this.buffer.length-1 && new_string !== this.buffer[line]) {
 		this.buffer[line] = new_string;
 		this.scroll_position[line] = 0;
+		this.just_updated = true;
 	}
 }
 

@@ -9,11 +9,11 @@
   },
   "scroll_type": {
     "type": "string",
-    "value": "1"
+    "value": "2"
   },
   "scroll_interval": {
     "type": "string",
-    "value": "1"
+    "value": "4"
   },
   "scroll_size": {
     "type": "string",
