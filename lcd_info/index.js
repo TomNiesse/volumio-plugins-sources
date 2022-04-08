@@ -28,6 +28,10 @@ lcdInfo.prototype.initializeLcdScreen = function() {
     this.i2c_device = "/dev/i2c-1";     // default to "/dev/i2c-1"
     this.i2c_address = 0x3F;            // default to 0x3F
 
+    this.renderer_scroll_type = 1;	// default to no scroll if settings don't load \
+    this.renderer_scroll_size = 0;      // ... \
+    this.renderer_scroll_interval = 0;  // ...
+
     // Load the plugin's settings
     var lang_code = this.commandRouter.sharedVars.get('language_code');
     self.commandRouter.i18nJson(__dirname+'/i18n/strings_'+lang_code+'.json', __dirname+'/i18n/strings_en.json', __dirname + '/UIConfig.json')
@@ -70,6 +74,9 @@ lcdInfo.prototype.onStart = function() {
  	this.enabled = true;
 	var defer=libQ.defer();
 
+	// Re-initialize the renderer, it doesn't always start scrolling otherwise
+	this.initializeRenderer(this.renderer_scroll_type, this.renderer_scroll_size, this.renderer_scroll_interval);
+
 //        this.initializeLcdScreen();
 //        this.wire = new i2c(LCD_I2C_ADDRESS, {device: self.config.get("i2c_block_device")});
         this.getState(); // start reading data from volumio
@@ -77,7 +84,7 @@ lcdInfo.prototype.onStart = function() {
 	// Once the Plugin has successfull started resolve the promise
 	defer.resolve();
 
-    this.initializeLcdScreen();
+//    this.initializeLcdScreen();
 
     return defer.promise;
 };
