@@ -4,7 +4,7 @@ Volumio plugins source code for Volumio 3; a fork
 # What's this?
 
 This fork of the volumio sources adds a plugin that displays music info on a HD44780 20x4 LCD screen (using I2C).
-The plugin displays the currently playing music (webradio or local music have been tested so far).
+The plugin displays the currently playing music (webradio and local music have been tested so far).
 The displayed text will scroll by default, like in a car radio, but this can be turned off.
 
 # How to install the plugin
@@ -16,5 +16,5 @@ The displayed text will scroll by default, like in a car radio, but this can be 
 - Navigate to the plugin's folder by executing `cd volumio-plugins-sources/lcd_info`
 - Execute the command `volumio plugin install` and wait for it to finish
 - Close the SSH connection
-- In the volumio web interface, go to `Plugins` -> `Installed Plugins` and enable the plugin
-- Restart volumio
+- In the Volumio web interface, go to `Plugins` -> `Installed Plugins` and enable the plugin
+- Restart Volumio
