@@ -20,3 +20,12 @@ The displayed text will scroll by default, like in a car radio, but this can be 
 - Close the SSH connection
 - In the Volumio web interface, go to `Plugins` -> `Installed Plugins` and enable the plugin
 - Restart Volumio
+
+# Updating the plugin
+
+- Connect to Volumio via SSH via `ssh volumio@volumio.local` or `ssh volumio@<volumio-ip-address>` using password `volumio`
+- Go into the `volumio-plugins-sources` folder by executing `cd volumio-plugins-sources`
+- Execute `git clone`
+- Go into the `lcd_info` folder by executing `cd lcd_info`
+- Execute `volumio plugin refresh`
+- Execute `volumio vrestart` or `reboot`
