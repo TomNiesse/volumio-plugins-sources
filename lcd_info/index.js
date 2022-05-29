@@ -223,6 +223,15 @@ lcdInfo.prototype.saveDisplaySettings = function(data) {
 		self.commandRouter.pushToastMessage("error", "Empty or invalid input in configuration", "Some display settings have NOT been saved");
 	}
 
+        // Store the new configuration within this class, so this.updateRendererSettings() can do it's job
+	self.commandRouter.pushConsoleMessage(data['scroll_type'].value + 'FfffFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
+        self.commandRouter.pushConsoleMessage(data['scroll_size'] + 'FfffFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
+        self.commandRouter.pushConsoleMessage(data['scroll_interval'] + 'FfffFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
+
+        this.renderer_scroll_type = parseInt(data['scroll_type'].value);
+        this.renderer_scroll_size = parseInt(data['scroll_size']);
+        this.renderer_scroll_interval = parseInt(data['scroll_interval']);
+
 // Apply the new settings immediately
 //	if(parseInt(data["scroll_type"].value) === 2) {
 //		this.renderer.setScroll(true);
@@ -304,9 +313,24 @@ lcdInfo.prototype.pause = function() {
 
 };
 
+lcdInfo.prototype.updateRendererSettings = function() {
+        if(this.renderer_scroll_type === 2) {
+                this.renderer.setScroll(true);
+        } else {
+                this.renderer.setScroll(false);
+        }
+        this.renderer.setScrollSize(this.renderer_scroll_size);
+        this.renderer.setScrollInterval(this.renderer_scroll_interval);
+
+}
+
 // Get state
 lcdInfo.prototype.getState = function() {
 	var self = this;
+
+	// Update the renderer, just in case some setting failed to load when the plugin started
+        this.updateRendererSettings();
+
 	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'lcdInfo::getState');
 
 	let url = "http://0.0.0.0:3000/api/v1/getState";

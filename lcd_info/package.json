@@ -31,9 +31,8 @@
 	"dependencies": {
 		"coffee-script": "^1.12.7",
 		"fs-extra": "^0.28.0",
-		"i2c": "^0.2.5",
 		"kew": "^0.7.0",
-		"v-conf": "^1.4.0",
-                "request": "^2.88.1"
+		"request": "^2.88.2",
+		"v-conf": "^1.4.0"
 	}
 }
