@@ -22,7 +22,7 @@ function lcdInfo(context) {
 }
 
 lcdInfo.prototype.initializeLcdScreen = function() {
-    var defer = libQ.defer();
+    //var defer = libQ.defer();
     var self = this;
 
     this.i2c_device = "/dev/i2c-1";     // default to "/dev/i2c-1"
@@ -51,6 +51,7 @@ lcdInfo.prototype.initializeLcdScreen = function() {
 
     this.initializeLcdDevice(this.i2c_device, this.i2c_address);
     this.initializeRenderer(this.renderer_scroll_type, this.renderer_scroll_size, this.renderer_scroll_interval);
+    //return defer.promise;
 }
 
 lcdInfo.prototype.sleep_async = function(ms) {
