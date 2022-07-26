@@ -7,7 +7,7 @@ echo "deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free
 # Update the repos
 sudo apt-get update
 # Install the required packages via apt-get
-sudo apt-get -y install make g++
+sudo DEBIAN_FRONTEND=noninteractive apt-get install make g++ -yq
 # Install i2c, request and coffee-script
 sudo npm install i2c coffee-script request
 
