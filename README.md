@@ -14,7 +14,6 @@ The displayed text will scroll by default, like in a car radio, but this can be 
 - Connect to Volumio via SSH via `ssh volumio@volumio.local` or `ssh volumio@<volumio-ip-address>` using password `volumio`
 - In the SSH client, clone this repository by executing `git clone https://github.com/TomNiesse/volumio-plugins-sources`
 - Navigate to the plugin's folder by executing `cd volumio-plugins-sources/lcd_info`
-- Make sure `make` and `g++` are installed by executing `sudo apt install make g++`
 - Execute the command `volumio plugin install` and wait for it to finish
   (Volumio 2.x will hang on "Finalizing installation", but the plugin has already been installed successfully; just hit CTRL-C and continue to the next step)
 - Close the SSH connection
