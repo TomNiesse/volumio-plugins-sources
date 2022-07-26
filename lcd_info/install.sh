@@ -1,14 +1,9 @@
 #!/bin/bash
 
 echo "Installing lcd info Dependencies"
-# Check if this is Volumio 2
-STR=`cat /etc/issue`
-SUB='8'
-if [[ "$STR" == *"$SUB"* ]]; then
-  # Fix the apt sources, so g++ and make can be installed
-  sudo sed -i 's/deb/#deb/g' /etc/apt/sources.list
-  echo "deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi" | sudo tee -a /etc/apt/sources.list
-fi
+# Update the package sources, in case volumio2 is still used
+sudo sed -i 's/deb/#deb/g' /etc/apt/sources.list
+echo "deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi" | sudo tee -a /etc/apt/sources.list
 # Update the repos
 sudo apt-get update
 # Install the required packages via apt-get
