@@ -6,9 +6,9 @@ The displayed text will scroll by default, like in a car radio, but this can be 
 
 # Updated version
 
-I used to have a repo with the same name, in which I wrote a volumio plugin that displays text on a 20x4 I2C LCD screen. That version has been rewritten into this one.
+I used to have a repo with the same name, in which I wrote a volumio plugin that displays text on a 20x4 I2C LCD screen. That version has been rewritten.
 
-An older version of the plugin can be found at https://github.com/TomNiesse/volumio20x4LCDPlugin_legacy, since it's been shared on a few blogs.
+An older version of the plugin can be found at https://github.com/TomNiesse/volumio20x4LCDPlugin_legacy. I will keep it around, since it's been shared on a few blogs.
 
 # How to install the plugin
 
