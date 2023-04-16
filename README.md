@@ -1,9 +1,6 @@
-# volumio-plugins-sources fork
-Volumio plugins source code for Volumio 3; a fork
-
 # What's this?
 
-This fork of the volumio sources adds a plugin that displays music info on a HD44780 20x4 LCD screen (using I2C).
+This repo contains a plugin that displays music info on a HD44780 20x4 LCD screen (using I2C).
 The plugin displays the currently playing music (webradio and local music have been tested so far).
 The displayed text will scroll by default, like in a car radio, but this can be turned off.
 
@@ -11,7 +8,7 @@ The displayed text will scroll by default, like in a car radio, but this can be 
 
 I used to have a repo with the same name, in which I wrote a volumio plugin that displays text on a 20x4 I2C LCD screen. That version has been rewritten into this one.
 
-An older version of the plugin can be found at https://github.com/TomNiesse/volumio20x4LCDPlugin_legacy. I see that it was shared on a forum, and that people might still want to use/look at that one.
+An older version of the plugin can be found at https://github.com/TomNiesse/volumio20x4LCDPlugin_legacy, since it's been shared on a few blogs.
 
 # How to install the plugin
 
@@ -21,7 +18,7 @@ An older version of the plugin can be found at https://github.com/TomNiesse/volu
 - In the SSH client, clone this repository by executing `git clone https://github.com/TomNiesse/volumio-plugins-sources`
 - Navigate to the plugin's folder by executing `cd volumio-plugins-sources/lcd_info`
 - Execute the command `volumio plugin install` and wait for it to finish
-  (Volumio 2.x will hang on "Finalizing installation", but the plugin has already been installed successfully; just hit CTRL-C and continue to the next step)
+  (Volumio 2.x will hang on "Finalizing installation", but the plugin has already been installed successfully; just hit CTRL-C after 5 minutes or so and continue to the next step)
 - Close the SSH connection
 - In the Volumio web interface, go to `Plugins` -> `Installed Plugins` and enable the plugin
 - Restart Volumio
