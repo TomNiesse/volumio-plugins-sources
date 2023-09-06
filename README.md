@@ -4,12 +4,6 @@ This repo contains a plugin that displays music info on a HD44780 20x4 LCD scree
 The plugin displays the currently playing music (webradio and local music have been tested so far).
 The displayed text will scroll by default, like in a car radio, but this can be turned off.
 
-# Updated version
-
-I used to have a repo with the same name, in which I wrote a volumio plugin that displays text on a 20x4 I2C LCD screen. That version has been rewritten.
-
-An older version of the plugin can be found at https://github.com/TomNiesse/volumio20x4LCDPlugin_legacy. I will keep it around, since it's been shared on a few blogs.
-
 # How to install the plugin
 
 - Go to the Volumio Test Player by visiting the following url: `http://volumio.local/dev/` or `http://<volumio-ip-address>/dev`
